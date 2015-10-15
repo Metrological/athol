@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="bcmrpi_dispmanx">
+
+  <copyright>
+  </copyright>
+
+  <interface name="wl_bcmrpi_dispmanx" version="1">
+
+    <request name="create_element">
+      <arg name="surface" type="object" interface="wl_surface"/>
+      <arg name="width" type="uint"/>
+      <arg name="height" type="uint"/>
+    </request>
+
+    <event name="element_created">
+      <arg name="surface" type="object" interface="wl_surface"/>
+      <arg name="handle" type="uint"/>
+    </event>
+
+  </interface>
+
+</protocol>

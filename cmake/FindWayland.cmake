@@ -31,5 +31,7 @@
 find_package(PkgConfig)
 pkg_check_modules(WAYLAND wayland-client wayland-server wayland-egl)
 
+find_program(WAYLAND_SCANNER NAMES wayland-scanner)
+
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(WAYLAND DEFAULT_MSG WAYLAND_LIBRARIES)
