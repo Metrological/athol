@@ -26,14 +26,10 @@
  */
 
 #include "Athol.h"
-#include "ShellLoader.h"
 
 int main()
 {
     Athol athol("athol-0");
-
-    ShellLoader::load(&athol);
-
     athol.run();
     return EXIT_SUCCESS;
 }
