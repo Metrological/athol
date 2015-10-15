@@ -43,6 +43,8 @@ public:
     void repaint(Athol::Update&);
     void dispatchFrameCallbacks(uint64_t time);
 
+    DISPMANX_ELEMENT_HANDLE_T createElement();
+
     struct wl_list link;
 
 private:
@@ -54,44 +56,8 @@ private:
 
     struct wl_list m_frameCallbacks;
 
-    class Buffer {
-    public:
-        Buffer()
-            : m_resource(nullptr)
-        { }
-        Buffer(struct wl_resource* resource)
-            : m_resource(resource)
-        { }
-
-        Buffer(Buffer&& o)
-            : m_resource(o.m_resource)
-        {
-            o.m_resource = nullptr;
-        }
-
-        Buffer& operator=(Buffer&& o)
-        {
-            m_resource = o.m_resource;
-            o.m_resource = nullptr;
-        }
-
-        bool operator!() { return !m_resource; }
-
-        struct wl_resource* resource() { return m_resource; }
-
-    private:
-        struct wl_resource* m_resource;
-    };
-
-    struct Buffers {
-        Buffer current;
-        Buffer pending;
-    } m_buffers;
-
-    DISPMANX_ELEMENT_HANDLE_T createElement(Athol::Update&, DISPMANX_RESOURCE_HANDLE_T);
-
     DISPMANX_ELEMENT_HANDLE_T m_elementHandle;
-    DISPMANX_RESOURCE_HANDLE_T m_background;
+    uint32_t m_xCoord;
 };
 
 #endif // Surface_h

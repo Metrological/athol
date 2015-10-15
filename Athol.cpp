@@ -34,9 +34,6 @@
 #include <sys/eventfd.h>
 #include <sys/time.h>
 
-Athol::BindDisplayType Athol::f_bindDisplay = nullptr;
-Athol::QueryWaylandBufferType Athol::f_queryWaylandBuffer = nullptr;
-
 Athol::Athol(const char* socketName)
     : m_display(wl_display_create())
     , m_initialized(false)
@@ -47,6 +44,8 @@ Athol::Athol(const char* socketName)
     setenv("WAYLAND_DISPLAY", socketName, 1);
 
     if (!wl_global_create(m_display, &wl_compositor_interface, 3, this, bindCompositorInterface))
+        return;
+    if (!wl_global_create(m_display, &wl_bcmrpi_dispmanx_interface, 1, this, bindBCMRPiDispmanxInterface))
         return;
 
     wl_list_init(&m_surfaceUpdateList);
@@ -61,14 +60,6 @@ Athol::Athol(const char* socketName)
     m_vsyncSource = wl_event_loop_add_fd(wl_display_get_event_loop(m_display),
         m_eventfd, WL_EVENT_READABLE, vsyncCallback, this);
     m_repaintSource = nullptr;
-
-    m_backend.eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    eglInitialize(m_backend.eglDisplay, nullptr, nullptr);
-
-    f_bindDisplay = reinterpret_cast<BindDisplayType>(eglGetProcAddress("eglBindWaylandDisplayWL"));
-    f_queryWaylandBuffer = reinterpret_cast<QueryWaylandBufferType>(eglGetProcAddress("eglQueryWaylandBufferWL"));
-
-    f_bindDisplay(m_backend.eglDisplay, m_display);
 
     bcm_host_init();
 
@@ -205,28 +196,47 @@ void Athol::updateComplete(DISPMANX_UPDATE_HANDLE_T, void* data)
 
 void Athol::bindCompositorInterface(struct wl_client* client, void* data, uint32_t version, uint32_t id)
 {
-    auto* athol = static_cast<Athol*>(data);
     struct wl_resource* resource = wl_resource_create(client, &wl_compositor_interface, 3, id);
     if (!resource) {
         wl_client_post_no_memory(client);
         return;
     }
 
-    wl_resource_set_implementation(resource, &m_compositorInterface, athol, nullptr);
+    wl_resource_set_implementation(resource, &m_compositorInterface, data, nullptr);
 }
 
 const struct wl_compositor_interface Athol::m_compositorInterface = {
     // create_surface
     [](struct wl_client* client, struct wl_resource* resource, uint32_t id)
     {
-        auto* athol = static_cast<Athol*>(wl_resource_get_user_data(resource));
-        new Surface(*athol, client, resource, id);
+        auto& athol = *static_cast<Athol*>(wl_resource_get_user_data(resource));
+        new Surface(athol, client, resource, id);
     },
     // create_region
     [](struct wl_client*, struct wl_resource*, uint32_t)
     {
         std::fprintf(stderr, "m_compositorInterface::create_region not implemented\n");
     }
+};
+
+void Athol::bindBCMRPiDispmanxInterface(struct wl_client* client, void* data, uint32_t version, uint32_t id)
+{
+    struct wl_resource* resource = wl_resource_create(client, &wl_bcmrpi_dispmanx_interface, 1, id);
+    if (!resource) {
+        wl_client_post_no_memory(client);
+        return;
+    }
+
+    wl_resource_set_implementation(resource, &m_BCMRPiDispmanxInterface, data, nullptr);
+}
+
+const struct wl_bcmrpi_dispmanx_interface Athol::m_BCMRPiDispmanxInterface = {
+    // create_element
+    [](struct wl_client*, struct wl_resource* resource, struct wl_resource* surfaceResource, uint32_t width, uint32_t height)
+    {
+        auto& surface = *static_cast<Surface*>(wl_resource_get_user_data(surfaceResource));
+        wl_bcmrpi_dispmanx_send_element_created(resource, surfaceResource, surface.createElement());
+    },
 };
 
 Athol::Update::Update(Athol& athol)

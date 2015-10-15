@@ -30,11 +30,9 @@
 
 #include "Input.h"
 #include <API/Interfaces.h>
-#include <wayland-server.h>
 
-#include <wayland-egl.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
+#include "wayland-bcmrpi-dispmanx-server-protocol.h"
+#include <wayland-server.h>
 
 #define BUILD_WAYLAND
 #include <bcm_host.h>
@@ -64,7 +62,6 @@ public:
 
         DISPMANX_UPDATE_HANDLE_T handle() { return m_updateHandle; }
         DISPMANX_DISPLAY_HANDLE_T displayHandle() { return m_athol.m_backend.displayHandle; }
-        EGLDisplay eglDisplay() { return m_athol.m_backend.eglDisplay; }
 
     private:
         Athol& m_athol;
@@ -78,15 +75,11 @@ public:
     virtual struct wl_display* display() const override;
     virtual void initializeInput(std::unique_ptr<API::InputClient>) override;
 
-    using BindDisplayType = PFNEGLBINDWAYLANDDISPLAYWL;
-    static BindDisplayType f_bindDisplay;
-
-    using QueryWaylandBufferType = PFNEGLQUERYWAYLANDBUFFERWL;
-    static QueryWaylandBufferType f_queryWaylandBuffer;
-
 private:
     static void bindCompositorInterface(struct wl_client*, void*, uint32_t, uint32_t);
     static const struct wl_compositor_interface m_compositorInterface;
+    static void bindBCMRPiDispmanxInterface(struct wl_client*, void*, uint32_t, uint32_t);
+    static const struct wl_bcmrpi_dispmanx_interface m_BCMRPiDispmanxInterface;
 
     struct wl_display* m_display;
     bool m_initialized;
@@ -109,7 +102,6 @@ private:
     uint32_t m_height;
 
     struct RPiBackend {
-        EGLDisplay eglDisplay;
         DISPMANX_DISPLAY_HANDLE_T displayHandle;
     } m_backend;
 
